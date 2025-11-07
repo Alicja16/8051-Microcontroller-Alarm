@@ -67,7 +67,7 @@ MAIN_LOOP:
 STOP:
 	SJMP $
 	NOP
-;-------------------PRZERWANIA----------------------
+;-------------------INTERRUPTS-------------------
 T0_ISR:
     MOV  TH0, #TH0_SET
     MOV  TL0, #TL0_SET
@@ -89,7 +89,7 @@ T1_ISR:
     CLR TR1
 NO_3SEC:
     RETI
-;-------------------FUNKCJE----------------------
+;-------------------FUNCTIONS--------------------
 PRINT_HOURS:
     MOV A,#'H'
     LCALL WRITE_DATA
