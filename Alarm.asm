@@ -22,6 +22,10 @@ TL1_SET EQU 0
 TIME EQU 30H
 TIME_1 EQU 60H
 
+TMP_BACK_0 EQU 20H
+TMP_BACK_1 EQU 21H
+
+
     LJMP START
 ;-----------------------------------------------
     ORG 0BH
@@ -118,14 +122,17 @@ LOOP:
     CJNE R6,#08, LOOP
 
     MOV R0,#01
+    MOV R7,#00100011B
     LCALL ENTER_NUMBER
     MOV A,#':'
     LCALL WRITE_DATA
     MOV R0,#02
+    MOV R7,#01011001B
     LCALL ENTER_NUMBER
     MOV A,#':'
     LCALL WRITE_DATA
     MOV R0,#03
+    MOV R7,#01011001B
     LCALL ENTER_NUMBER
     RET
 ;-----------------------------------------------
@@ -148,38 +155,51 @@ ENTER_ALARM_TIME:
     LCALL WRITE_DATA
     
     MOV R0,#04
+    MOV R7,#00100011B
     LCALL ENTER_NUMBER
     MOV A,#':'
     LCALL WRITE_DATA
     MOV R0,#05
+    MOV R7,#01011001B
     LCALL ENTER_NUMBER
     MOV A,#':'
     LCALL WRITE_DATA
     MOV R0,#06
+    MOV R7,#01011001B
     LCALL ENTER_NUMBER
     RET
 ;-----------------------------------------------
 ENTER_NUMBER:
+AGAIN:
     LCALL WAIT_KEY
     PUSH ACC
     LCALL WAIT_KEY
     PUSH ACC
     LCALL BCD
     MOV @R0,A
+CHECK_NUMBER:
+    CLR C
+    SUBB A,R7
+    JC OK
+    JZ OK
+    SJMP AGAIN
+OK:
+    MOV A,@R0
     LCALL WRITE_HEX
     RET
 ;-----------------------------------------------
+
 BCD:
-    POP 06H
-    POP 07H
+    POP TMP_BACK_0
+    POP TMP_BACK_1
     POP B ; B=J
     POP ACC ; A=T
     ANL A, #0FH
     SWAP A ; TT00
     ANL B, #0FH 
     ORL A,B ; A=TTJJ
-    PUSH 07H
-    PUSH 06H
+    PUSH TMP_BACK_1
+    PUSH TMP_BACK_0
     RET
 ;-----------------------------------------------
 CLOCK_CHANGE:

@@ -22,231 +22,251 @@
     22        0030      TIME EQU 30H
     23        0060      TIME_1 EQU 60H
     24                  
-    25  0000: 02 01 00      LJMP START
-    26                  ;-----------------------------------------------
-    27  000B:               ORG 0BH
-    28  000B: 02 01 3B      LJMP T0_ISR
-    29                  ;-----------------------------------------------
-    30  001B:               ORG 1BH
-    31  001B: 02 01 51      LJMP T1_ISR
-    32                  ;-----------------------------------------------
-    33  0100:           	ORG 100H
-    34  0100:           START:
-    35  0100: 75 81 30      MOV SP, #30h
-    36  0103: 75 89 11      MOV TMOD,#TMOD_SET ;Timer 0 liczy czas
-    37  0106: 75 30 14      MOV TIME, #20
-    38  0109: D2 AF         SETB EA
-    39                  
-    40  010B: 12 81 0C      LCALL LCD_CLR
-    41  010E: 12 01 63      LCALL PRINT_HOURS
-    42  0111: 12 01 8C      LCALL ENTER_START_TIME
-    43                      ;hh:mm:ss
-    44                      ;R1:R2:R3
-    45  0114:           WAIT_NEXT:
-    46  0114: 12 81 1C      LCALL WAIT_KEY
-    47  0117: B4 0E FA      CJNE A, #14, WAIT_NEXT
-    48                  
-    49  011A: 12 81 0C      LCALL LCD_CLR
-    50  011D: 12 01 63      LCALL PRINT_HOURS
-    51  0120: 12 01 B1      LCALL ENTER_ALARM_TIME
-    52                      ;hh:mm:ss
-    53                      ;R4:R5:R6
-    54                  
-    55  0123:           WAIT_ENT:
-    56  0123: 12 81 1C      LCALL WAIT_KEY
-    57  0126: B4 0E FA      CJNE A, #14, WAIT_ENT
-    58  0129: 75 8C 4C      MOV TH0,#TH0_SET
-    59  012C: 75 8A 00      MOV TL0,#TL0_SET
-    60  012F: 75 30 14      MOV TIME,#20
-    61  0132: D2 A9         SETB ET0
-    62  0134: D2 8C         SETB TR0 
-    63                  
-    64  0136:           MAIN_LOOP:
-    65  0136: 80 FE         SJMP MAIN_LOOP
-    66                  
-    67  0138:           STOP:
-    68  0138: 80 FE     	SJMP $
-    69  013A: 00        	NOP
-    70                  ;-------------------INTERRUPTS-------------------
-    71  013B:           T0_ISR:
-    72  013B: 75 8C 4C      MOV  TH0, #TH0_SET
-    73  013E: 75 8A 00      MOV  TL0, #TL0_SET
-    74  0141: D5 30 0C      DJNZ TIME, NO_1SEC
-    75  0144: 75 30 14      MOV  TIME, #20
-    76  0147: 12 02 1A      LCALL CLOCK_CHANGE
-    77  014A: 12 02 3F      LCALL WRITE_CLOCK
-    78  014D: 12 02 59      LCALL IF_ALARM
-    79  0150:           NO_1SEC:
-    80  0150: 32            RETI
-    81                  ;-----------------------------------------------
-    82  0151:           T1_ISR:
-    83  0151: 75 8D 4C      MOV  TH1, #TH1_SET
-    84  0154: 75 8B 00      MOV  TL1, #TL1_SET
-    85  0157: D5 60 08      DJNZ TIME_1, NO_3SEC
-    86  015A: D2 95         SETB P1.5
-    87  015C: D2 97         SETB P1.7
-    88  015E: C2 AB         CLR ET1
-    89  0160: C2 8E         CLR TR1
-    90  0162:           NO_3SEC:
-    91  0162: 32            RETI
-    92                  ;-------------------FUNCTIONS--------------------
-    93  0163:           PRINT_HOURS:
-    94  0163: 74 48         MOV A,#'H'
-    95  0165: 12 81 02      LCALL WRITE_DATA
-    96  0168: 74 48         MOV A,#'H'
-    97  016A: 12 81 02      LCALL WRITE_DATA
-    98  016D: 74 3A         MOV A,#':'
-    99  016F: 12 81 02      LCALL WRITE_DATA
-   100  0172: 74 4D         MOV A,#'M'
-   101  0174: 12 81 02      LCALL WRITE_DATA
-   102  0177: 74 4D         MOV A,#'M'
-   103  0179: 12 81 02      LCALL WRITE_DATA
-   104  017C: 74 3A         MOV A,#':'
-   105  017E: 12 81 02      LCALL WRITE_DATA
-   106  0181: 74 53         MOV A,#'S'
-   107  0183: 12 81 02      LCALL WRITE_DATA
-   108  0186: 74 53         MOV A,#'S'
-   109  0188: 12 81 02      LCALL WRITE_DATA
-   110  018B: 22            RET
-   111                  ;-----------------------------------------------
-   112  018C:           ENTER_START_TIME:
-   113  018C: 7E 00         MOV R6,#0
-   114  018E:           LOOP:
-   115  018E: 74 20         MOV A,#' '
-   116  0190: 12 81 02      LCALL WRITE_DATA
-   117  0193: 0E            INC R6
-   118  0194: BE 08 F7      CJNE R6,#08, LOOP
-   119                  
-   120  0197: 78 01         MOV R0,#01
-   121  0199: 12 01 F3      LCALL ENTER_NUMBER
-   122  019C: 74 3A         MOV A,#':'
-   123  019E: 12 81 02      LCALL WRITE_DATA
-   124  01A1: 78 02         MOV R0,#02
-   125  01A3: 12 01 F3      LCALL ENTER_NUMBER
-   126  01A6: 74 3A         MOV A,#':'
-   127  01A8: 12 81 02      LCALL WRITE_DATA
-   128  01AB: 78 03         MOV R0,#03
-   129  01AD: 12 01 F3      LCALL ENTER_NUMBER
-   130  01B0: 22            RET
-   131                  ;-----------------------------------------------
-   132  01B1:           ENTER_ALARM_TIME:
-   133  01B1: 74 20         MOV A,#' '
-   134  01B3: 12 81 02      LCALL WRITE_DATA
-   135  01B6: 74 41         MOV A,#'A'
-   136  01B8: 12 81 02      LCALL WRITE_DATA
-   137  01BB: 74 4C         MOV A,#'L'
-   138  01BD: 12 81 02      LCALL WRITE_DATA
-   139  01C0: 74 41         MOV A,#'A'
-   140  01C2: 12 81 02      LCALL WRITE_DATA
-   141  01C5: 74 52         MOV A,#'R'
-   142  01C7: 12 81 02      LCALL WRITE_DATA
-   143  01CA: 74 4D         MOV A,#'M'
-   144  01CC: 12 81 02      LCALL WRITE_DATA
-   145  01CF: 74 20         MOV A,#' '
-   146  01D1: 12 81 02      LCALL WRITE_DATA
-   147  01D4: 74 20         MOV A,#' '
-   148  01D6: 12 81 02      LCALL WRITE_DATA
-   149                      
-   150  01D9: 78 04         MOV R0,#04
-   151  01DB: 12 01 F3      LCALL ENTER_NUMBER
-   152  01DE: 74 3A         MOV A,#':'
-   153  01E0: 12 81 02      LCALL WRITE_DATA
-   154  01E3: 78 05         MOV R0,#05
-   155  01E5: 12 01 F3      LCALL ENTER_NUMBER
-   156  01E8: 74 3A         MOV A,#':'
-   157  01EA: 12 81 02      LCALL WRITE_DATA
-   158  01ED: 78 06         MOV R0,#06
-   159  01EF: 12 01 F3      LCALL ENTER_NUMBER
-   160  01F2: 22            RET
-   161                  ;-----------------------------------------------
-   162  01F3:           ENTER_NUMBER:
-   163  01F3: 12 81 1C      LCALL WAIT_KEY
-   164  01F6: C0 E0         PUSH ACC
-   165  01F8: 12 81 1C      LCALL WAIT_KEY
-   166  01FB: C0 E0         PUSH ACC
-   167  01FD: 12 02 05      LCALL BCD
-   168  0200: F6            MOV @R0,A
-   169  0201: 12 81 04      LCALL WRITE_HEX
-   170  0204: 22            RET
+    25        0020      TMP_BACK_0 EQU 20H
+    26        0021      TMP_BACK_1 EQU 21H
+    27                  
+    28                  
+    29  0000: 02 01 00      LJMP START
+    30                  ;-----------------------------------------------
+    31  000B:               ORG 0BH
+    32  000B: 02 01 3B      LJMP T0_ISR
+    33                  ;-----------------------------------------------
+    34  001B:               ORG 1BH
+    35  001B: 02 01 51      LJMP T1_ISR
+    36                  ;-----------------------------------------------
+    37  0100:           	ORG 100H
+    38  0100:           START:
+    39  0100: 75 81 30      MOV SP, #30h
+    40  0103: 75 89 11      MOV TMOD,#TMOD_SET ;Timer 0 liczy czas
+    41  0106: 75 30 14      MOV TIME, #20
+    42  0109: D2 AF         SETB EA
+    43                  
+    44  010B: 12 81 0C      LCALL LCD_CLR
+    45  010E: 12 01 63      LCALL PRINT_HOURS
+    46  0111: 12 01 8C      LCALL ENTER_START_TIME
+    47                      ;hh:mm:ss
+    48                      ;R1:R2:R3
+    49  0114:           WAIT_NEXT:
+    50  0114: 12 81 1C      LCALL WAIT_KEY
+    51  0117: B4 0E FA      CJNE A, #14, WAIT_NEXT
+    52                  
+    53  011A: 12 81 0C      LCALL LCD_CLR
+    54  011D: 12 01 63      LCALL PRINT_HOURS
+    55  0120: 12 01 B7      LCALL ENTER_ALARM_TIME
+    56                      ;hh:mm:ss
+    57                      ;R4:R5:R6
+    58                  
+    59  0123:           WAIT_ENT:
+    60  0123: 12 81 1C      LCALL WAIT_KEY
+    61  0126: B4 0E FA      CJNE A, #14, WAIT_ENT
+    62  0129: 75 8C 4C      MOV TH0,#TH0_SET
+    63  012C: 75 8A 00      MOV TL0,#TL0_SET
+    64  012F: 75 30 14      MOV TIME,#20
+    65  0132: D2 A9         SETB ET0
+    66  0134: D2 8C         SETB TR0 
+    67                  
+    68  0136:           MAIN_LOOP:
+    69  0136: 80 FE         SJMP MAIN_LOOP
+    70                  
+    71  0138:           STOP:
+    72  0138: 80 FE     	SJMP $
+    73  013A: 00        	NOP
+    74                  ;-------------------INTERRUPTS-------------------
+    75  013B:           T0_ISR:
+    76  013B: 75 8C 4C      MOV  TH0, #TH0_SET
+    77  013E: 75 8A 00      MOV  TL0, #TL0_SET
+    78  0141: D5 30 0C      DJNZ TIME, NO_1SEC
+    79  0144: 75 30 14      MOV  TIME, #20
+    80  0147: 12 02 2F      LCALL CLOCK_CHANGE
+    81  014A: 12 02 54      LCALL WRITE_CLOCK
+    82  014D: 12 02 6E      LCALL IF_ALARM
+    83  0150:           NO_1SEC:
+    84  0150: 32            RETI
+    85                  ;-----------------------------------------------
+    86  0151:           T1_ISR:
+    87  0151: 75 8D 4C      MOV  TH1, #TH1_SET
+    88  0154: 75 8B 00      MOV  TL1, #TL1_SET
+    89  0157: D5 60 08      DJNZ TIME_1, NO_3SEC
+    90  015A: D2 95         SETB P1.5
+    91  015C: D2 97         SETB P1.7
+    92  015E: C2 AB         CLR ET1
+    93  0160: C2 8E         CLR TR1
+    94  0162:           NO_3SEC:
+    95  0162: 32            RETI
+    96                  ;-------------------FUNCTIONS--------------------
+    97  0163:           PRINT_HOURS:
+    98  0163: 74 48         MOV A,#'H'
+    99  0165: 12 81 02      LCALL WRITE_DATA
+   100  0168: 74 48         MOV A,#'H'
+   101  016A: 12 81 02      LCALL WRITE_DATA
+   102  016D: 74 3A         MOV A,#':'
+   103  016F: 12 81 02      LCALL WRITE_DATA
+   104  0172: 74 4D         MOV A,#'M'
+   105  0174: 12 81 02      LCALL WRITE_DATA
+   106  0177: 74 4D         MOV A,#'M'
+   107  0179: 12 81 02      LCALL WRITE_DATA
+   108  017C: 74 3A         MOV A,#':'
+   109  017E: 12 81 02      LCALL WRITE_DATA
+   110  0181: 74 53         MOV A,#'S'
+   111  0183: 12 81 02      LCALL WRITE_DATA
+   112  0186: 74 53         MOV A,#'S'
+   113  0188: 12 81 02      LCALL WRITE_DATA
+   114  018B: 22            RET
+   115                  ;-----------------------------------------------
+   116  018C:           ENTER_START_TIME:
+   117  018C: 7E 00         MOV R6,#0
+   118  018E:           LOOP:
+   119  018E: 74 20         MOV A,#' '
+   120  0190: 12 81 02      LCALL WRITE_DATA
+   121  0193: 0E            INC R6
+   122  0194: BE 08 F7      CJNE R6,#08, LOOP
+   123                  
+   124  0197: 78 01         MOV R0,#01
+   125  0199: 7F 23         MOV R7,#00100011B
+   126  019B: 12 01 FF      LCALL ENTER_NUMBER
+   127  019E: 74 3A         MOV A,#':'
+   128  01A0: 12 81 02      LCALL WRITE_DATA
+   129  01A3: 78 02         MOV R0,#02
+   130  01A5: 7F 59         MOV R7,#01011001B
+   131  01A7: 12 01 FF      LCALL ENTER_NUMBER
+   132  01AA: 74 3A         MOV A,#':'
+   133  01AC: 12 81 02      LCALL WRITE_DATA
+   134  01AF: 78 03         MOV R0,#03
+   135  01B1: 7F 59         MOV R7,#01011001B
+   136  01B3: 12 01 FF      LCALL ENTER_NUMBER
+   137  01B6: 22            RET
+   138                  ;-----------------------------------------------
+   139  01B7:           ENTER_ALARM_TIME:
+   140  01B7: 74 20         MOV A,#' '
+   141  01B9: 12 81 02      LCALL WRITE_DATA
+   142  01BC: 74 41         MOV A,#'A'
+   143  01BE: 12 81 02      LCALL WRITE_DATA
+   144  01C1: 74 4C         MOV A,#'L'
+   145  01C3: 12 81 02      LCALL WRITE_DATA
+   146  01C6: 74 41         MOV A,#'A'
+   147  01C8: 12 81 02      LCALL WRITE_DATA
+   148  01CB: 74 52         MOV A,#'R'
+   149  01CD: 12 81 02      LCALL WRITE_DATA
+   150  01D0: 74 4D         MOV A,#'M'
+   151  01D2: 12 81 02      LCALL WRITE_DATA
+   152  01D5: 74 20         MOV A,#' '
+   153  01D7: 12 81 02      LCALL WRITE_DATA
+   154  01DA: 74 20         MOV A,#' '
+   155  01DC: 12 81 02      LCALL WRITE_DATA
+   156                      
+   157  01DF: 78 04         MOV R0,#04
+   158  01E1: 7F 23         MOV R7,#00100011B
+   159  01E3: 12 01 FF      LCALL ENTER_NUMBER
+   160  01E6: 74 3A         MOV A,#':'
+   161  01E8: 12 81 02      LCALL WRITE_DATA
+   162  01EB: 78 05         MOV R0,#05
+   163  01ED: 7F 59         MOV R7,#01011001B
+   164  01EF: 12 01 FF      LCALL ENTER_NUMBER
+   165  01F2: 74 3A         MOV A,#':'
+   166  01F4: 12 81 02      LCALL WRITE_DATA
+   167  01F7: 78 06         MOV R0,#06
+   168  01F9: 7F 59         MOV R7,#01011001B
+   169  01FB: 12 01 FF      LCALL ENTER_NUMBER
+   170  01FE: 22            RET
    171                  ;-----------------------------------------------
-   172  0205:           BCD:
-   173  0205: D0 06         POP 06H
-   174  0207: D0 07         POP 07H
-   175  0209: D0 F0         POP B ; B=J
-   176  020B: D0 E0         POP ACC ; A=T
-   177  020D: 54 0F         ANL A, #0FH
-   178  020F: C4            SWAP A ; TT00
-   179  0210: 53 F0 0F      ANL B, #0FH 
-   180  0213: 45 F0         ORL A,B ; A=TTJJ
-   181  0215: C0 07         PUSH 07H
-   182  0217: C0 06         PUSH 06H
-   183  0219: 22            RET
-   184                  ;-----------------------------------------------
-   185  021A:           CLOCK_CHANGE:
-   186  021A: 78 03         MOV R0,#03
-   187  021C: BB 59 11      CJNE R3,#01011001B, INC_H_M_S
-   188  021F: 7B 00         MOV R3,#00 ; R3 = 00
-   189  0221: 78 02         MOV R0,#02
-   190  0223: BA 59 0A      CJNE R2,#01011001B, INC_H_M_S
-   191  0226: 7A 00         MOV R2,#00 ; R2 = 00
-   192  0228: 78 01         MOV R0,#01
-   193  022A: B9 23 03      CJNE R1,#00100011B, INC_H_M_S
-   194  022D: 79 00         MOV R1,#00
-   195  022F: 22            RET
-   196                  ;-----------------------------------------------
-   197  0230:           INC_H_M_S:
-   198  0230: E6            MOV A, @R0
-   199  0231: 54 0F         ANL A, #0FH
-   200  0233: B4 09 07      CJNE A, #09, ADD_ONE
-   201  0236: E6            MOV A, @R0
-   202  0237: 54 F0         ANL A, #0F0H
-   203  0239: 24 10         ADD A, #10H
-   204  023B: F6            MOV @R0, A
-   205  023C: 22            RET
-   206  023D:           ADD_ONE:
-   207  023D: 06            INC @R0
-   208  023E: 22            RET
-   209                  ;-----------------------------------------------
-   210  023F:           WRITE_CLOCK:
-   211  023F: 12 81 0C      LCALL LCD_CLR
-   212  0242: E9            MOV A,R1
-   213  0243: 12 81 04      LCALL WRITE_HEX
-   214  0246: 74 3A         MOV A,#':'
-   215  0248: 12 81 02      LCALL WRITE_DATA
-   216  024B: EA            MOV A,R2
-   217  024C: 12 81 04      LCALL WRITE_HEX
-   218  024F: 74 3A         MOV A,#':'
-   219  0251: 12 81 02      LCALL WRITE_DATA
-   220  0254: EB            MOV A,R3
-   221  0255: 12 81 04      LCALL WRITE_HEX
-   222  0258: 22            RET
-   223                  ;-----------------------------------------------
-   224  0259:           IF_ALARM:
-   225  0259: EC            MOV A, R4
-   226  025A: C3            CLR C
-   227  025B: 99            SUBB A, R1
-   228  025C: 70 20         JNZ NOT_YET
-   229                  
-   230  025E: ED            MOV A, R5
-   231  025F: C3            CLR C
-   232  0260: 9A            SUBB A, R2
-   233  0261: 70 1B         JNZ NOT_YET
-   234                  
-   235  0263: EE            MOV A, R6
-   236  0264: C3            CLR C
-   237  0265: 9B            SUBB A, R3
-   238  0266: 70 16         JNZ NOT_YET
-   239                  
-   240  0268: C2 95         CLR P1.5
-   241  026A: C2 97         CLR P1.7
-   242  026C: 20 8E 0E      JB TR1, ALARM_ON
-   243  026F: 75 8D 4C      MOV TH1,#TH1_SET
-   244  0272: 75 8B 00      MOV TL1,#TL1_SET
-   245  0275: 75 60 3C      MOV TIME_1,#60
-   246  0278: D2 AB         SETB ET1
-   247  027A: D2 8E         SETB TR1 
-   248  027C: 22            RET
-   249  027D:           ALARM_ON:
-   250  027D: 22            RET
-   251  027E:           NOT_YET:
-   252  027E: 22            RET
+   172  01FF:           ENTER_NUMBER:
+   173  01FF:           AGAIN:
+   174  01FF: 12 81 1C      LCALL WAIT_KEY
+   175  0202: C0 E0         PUSH ACC
+   176  0204: 12 81 1C      LCALL WAIT_KEY
+   177  0207: C0 E0         PUSH ACC
+   178  0209: 12 02 1A      LCALL BCD
+   179  020C: F6            MOV @R0,A
+   180  020D:           CHECK_NUMBER:
+   181  020D: C3            CLR C
+   182  020E: 9F            SUBB A,R7
+   183  020F: 40 04         JC OK
+   184  0211: 60 02         JZ OK
+   185  0213: 80 EA         SJMP AGAIN
+   186  0215:           OK:
+   187  0215: E6            MOV A,@R0
+   188  0216: 12 81 04      LCALL WRITE_HEX
+   189  0219: 22            RET
+   190                  ;-----------------------------------------------
+   191                  
+   192  021A:           BCD:
+   193  021A: D0 20         POP TMP_BACK_0
+   194  021C: D0 21         POP TMP_BACK_1
+   195  021E: D0 F0         POP B ; B=J
+   196  0220: D0 E0         POP ACC ; A=T
+   197  0222: 54 0F         ANL A, #0FH
+   198  0224: C4            SWAP A ; TT00
+   199  0225: 53 F0 0F      ANL B, #0FH 
+   200  0228: 45 F0         ORL A,B ; A=TTJJ
+   201  022A: C0 21         PUSH TMP_BACK_1
+   202  022C: C0 20         PUSH TMP_BACK_0
+   203  022E: 22            RET
+   204                  ;-----------------------------------------------
+   205  022F:           CLOCK_CHANGE:
+   206  022F: 78 03         MOV R0,#03
+   207  0231: BB 59 11      CJNE R3,#01011001B, INC_H_M_S
+   208  0234: 7B 00         MOV R3,#00 ; R3 = 00
+   209  0236: 78 02         MOV R0,#02
+   210  0238: BA 59 0A      CJNE R2,#01011001B, INC_H_M_S
+   211  023B: 7A 00         MOV R2,#00 ; R2 = 00
+   212  023D: 78 01         MOV R0,#01
+   213  023F: B9 23 03      CJNE R1,#00100011B, INC_H_M_S
+   214  0242: 79 00         MOV R1,#00
+   215  0244: 22            RET
+   216                  ;-----------------------------------------------
+   217  0245:           INC_H_M_S:
+   218  0245: E6            MOV A, @R0
+   219  0246: 54 0F         ANL A, #0FH
+   220  0248: B4 09 07      CJNE A, #09, ADD_ONE
+   221  024B: E6            MOV A, @R0
+   222  024C: 54 F0         ANL A, #0F0H
+   223  024E: 24 10         ADD A, #10H
+   224  0250: F6            MOV @R0, A
+   225  0251: 22            RET
+   226  0252:           ADD_ONE:
+   227  0252: 06            INC @R0
+   228  0253: 22            RET
+   229                  ;-----------------------------------------------
+   230  0254:           WRITE_CLOCK:
+   231  0254: 12 81 0C      LCALL LCD_CLR
+   232  0257: E9            MOV A,R1
+   233  0258: 12 81 04      LCALL WRITE_HEX
+   234  025B: 74 3A         MOV A,#':'
+   235  025D: 12 81 02      LCALL WRITE_DATA
+   236  0260: EA            MOV A,R2
+   237  0261: 12 81 04      LCALL WRITE_HEX
+   238  0264: 74 3A         MOV A,#':'
+   239  0266: 12 81 02      LCALL WRITE_DATA
+   240  0269: EB            MOV A,R3
+   241  026A: 12 81 04      LCALL WRITE_HEX
+   242  026D: 22            RET
+   243                  ;-----------------------------------------------
+   244  026E:           IF_ALARM:
+   245  026E: EC            MOV A, R4
+   246  026F: C3            CLR C
+   247  0270: 99            SUBB A, R1
+   248  0271: 70 20         JNZ NOT_YET
+   249                  
+   250  0273: ED            MOV A, R5
+   251  0274: C3            CLR C
+   252  0275: 9A            SUBB A, R2
+   253  0276: 70 1B         JNZ NOT_YET
+   254                  
+   255  0278: EE            MOV A, R6
+   256  0279: C3            CLR C
+   257  027A: 9B            SUBB A, R3
+   258  027B: 70 16         JNZ NOT_YET
+   259                  
+   260  027D: C2 95         CLR P1.5
+   261  027F: C2 97         CLR P1.7
+   262  0281: 20 8E 0E      JB TR1, ALARM_ON
+   263  0284: 75 8D 4C      MOV TH1,#TH1_SET
+   264  0287: 75 8B 00      MOV TL1,#TL1_SET
+   265  028A: 75 60 3C      MOV TIME_1,#60
+   266  028D: D2 AB         SETB ET1
+   267  028F: D2 8E         SETB TR1 
+   268  0291: 22            RET
+   269  0292:           ALARM_ON:
+   270  0292: 22            RET
+   271  0293:           NOT_YET:
+   272  0293: 22            RET
