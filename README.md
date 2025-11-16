@@ -47,7 +47,7 @@ The system uses Timer0 to generate precise 1-second ticks, and Timer1 to drive t
 
 ---
 
-## 🖼 Screenshots (DSM-51 Simulator)
+## 🟠 Screenshots (DSM-51 Simulator)
 
 ### ⌨️ Entering alarm time (HH:MM:SS)
 <p align="center">
